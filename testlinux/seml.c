@@ -45,14 +45,14 @@ int main(int argc, char *argv[])
 
 	for(i = 0; i < 10; i++)
 	{
-		//每次循环都进入临界区，然后把  从
+		//每次循环都进入临界区
 		if(!semaphore_p(sem_id))
 		{
 			exit(EXIT_FAILURE);
 		}
 
 		printf("%c", message);//进入临界去区之后，就不断地打印信息？
-
+		fflush(stdout);
 		//清理缓冲区，然后休眠随机时间
 		fflush(stdout);
 		sleep(rand() % 3);

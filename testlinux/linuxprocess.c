@@ -192,12 +192,20 @@ int main(void)
 		close(pipe_fd_r);
 
 		/*pid6发送消息给pid7*/
+		/*
 		memset(buffer, 0, sizeof(buffer));
 		pipe_fd_w = open(fifo_name7, open_mode_1);
 		sprintf(buffer, "pid6 send to pid7,pid6=%d", getpid());
 		write(pipe_fd_w, buffer, CHARBUFFER);
 		printf("pid6 send pid7 success:%s\n", buffer);
 		close(pipe_fd_w);	
+		*/
+		int sem_id;
+		sem_id = semget((key_id)1234, 1, 0666 | IPC_CREAT);
+
+		/*初始化信号量*/
+		set_sem
+
 
 		exit(1);
 	}
@@ -206,6 +214,7 @@ int main(void)
 	{	
 		/*pid7 接收 pid6的消息*/
 		printf("I'm pid7;PID=%d\n", getpid());
+		/*
 		int pipe_fd_r = -1;
 		char buffer[CHARBUFFER] = {0};
 
@@ -213,6 +222,10 @@ int main(void)
 		read(pipe_fd_r, buffer,CHARBUFFER);
 		printf("pid7 get pid6 msg successfully: %s\n", buffer);
 		close(pipe_fd_r);
+
+		*/
+
+		/*采用 信号量的方法来进行通信*/
 
 
 		exit(1);

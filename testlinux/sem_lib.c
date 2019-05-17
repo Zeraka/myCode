@@ -1,6 +1,7 @@
 #include "sem_lib.h"
 #include<string.h>
-
+#include<sys/sem.h>
+#include<stdio.h>
 
 int set_semvalue(int sem_id)
 {
@@ -18,18 +19,15 @@ int set_semvalue(int sem_id)
 }
 
 /*删除信号量*/
-int del_semvalue(int sem_id)
+void del_semvalue(int sem_id)
 {
 	union semun sem_union;
 
 	if(semctl(sem_id, 0, IPC_RMID, sem_union) == -1)
 	{
 		fprintf(stderr, "del_semvalue failed\n");
-
-		return 0;
 	}
 
-	return 1;
 }
 
 /*P操作*/
@@ -42,7 +40,7 @@ int semaphore_p(int sem_id)
 	sem_buffer.sem_flg = SEM_UNDO;//系统将更新进程的semadj变量
 	if(semop(sem_id, &sem_buffer, 1) == -1)
 	{
-		fprintf(stderr, "semaphore_p failed\n", );
+		fprintf(stderr, "semaphore_p failed\n");
 		
 		return 0;
 	}
