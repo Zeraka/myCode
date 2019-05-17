@@ -12,7 +12,7 @@ union semun
 	int val;
 	struct semid_ds *buf;
 	unsigned short *array;
-};//这个得自己
+};//这个得自己写一个结构体
 
 static int sem_id = 0; //信号量id为0？
 
@@ -29,8 +29,8 @@ int main(int argc, char *argv[])
 	//创建信号量，标识符为1234,信号量数1， 
 	sem_id = semget((key_t)1234, 1, 0666 | IPC_CREAT);
 
-	if(argc > 1)
-	{
+	if(argc > 1) 
+	{//为什么要有这个，主要是为了区分
 		//程序第一次被调用，初始化信号量
 		if(!set_semvalue(sem_id))
 		{
@@ -38,20 +38,20 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 
-		//设置要输出到屏幕中的信息，即参数的第一个字符
+		//设置要输出到屏幕中的信息，即参数的第一个字符，如果参数大于1个，那么就会将message替换，然后打印出来
 		message = argv[1][0];
 		sleep(2);
 	}
 
 	for(i = 0; i < 10; i++)
 	{
-		//进入临界区
+		//每次循环都进入临界区，然后把  从
 		if(!semaphore_p(sem_id))
 		{
 			exit(EXIT_FAILURE);
 		}
 
-		printf("%c", message);
+		printf("%c", message);//进入临界去区之后，就不断地打印信息？
 
 		//清理缓冲区，然后休眠随机时间
 		fflush(stdout);
@@ -82,8 +82,14 @@ static int set_semvalue(int sem_id)
 	union semun sem_union;
 
 	sem_union.val = 1;//因为初始化信号量，所以第三个参数为SETVAL,
-	if(semctl(sem_id, 0, SETVAL, sem_union) == -1)
+	if(semctl(sem_id, 0, SETVAL, sem_union) == -1){
 		fprintf(stderr, "Failed to delete semaphore\n");
+
+		return 0;
+	}
+	
+
+	return 1;
 }
 
 static void del_semvalue(int sem_id)
@@ -130,6 +136,7 @@ static int semaphore_v(int sem_id)//V操作，释放，使信号量加1
 }
 
 /*
-semop(sem_id, &sem_b, 1)
-第三个参数 叫做 num_sem_ops 一般是1
+执行的时候，是 ./seml 0 & ./seml
+
+在bash中使用 &  ,表明这是后台进程
 */
