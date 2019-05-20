@@ -130,12 +130,6 @@ int main(void)
 		msgbufAccept(fifo_name6, "pid6", "pid5");
 
 		//pid发送消息给pid7
-		shmid = shmget(KEY, CHARBUFFER, IPC_CREAT | 0666);//创建
-	
-		if(shmid == -1){
-			fprintf(stderr, "root create shm failed\n");
-			exit(EXIT_FAILURE);
-		}
 		shmaddr = (char*)shmat(shmid, NULL, 0);
 
 		if(shmaddr == (void *)-1)
@@ -146,9 +140,7 @@ int main(void)
 		strcpy(shmaddr, "pid6 send msg to msg7");
 
 		shmdt(shmaddr);
-		sleep(8);
-			shmctl(shmid, IPC_RMID, NULL);
-
+		sleep(3);
 		exit(1);
 	}
 
@@ -160,6 +152,8 @@ int main(void)
 
 		
 		/*pid7 接收 pid6的消息*/
+		shmctl(shmid, IPC_STAT, &buf);//取得共享内存的相关信息，复制到缓冲区buf中
+		printf("safdasfd\n");
 		shmaddr = (char*)shmat(shmid,NULL,0);
 
 		if(shmaddr == (void *)-1){
@@ -168,10 +162,23 @@ int main(void)
 		}
 
 		printf("pid7 get pid6 msg : %s\n", shmaddr);
-
+		
 		shmdt(shmaddr);
 		exit(1);
 	}	
+	/*
+		shmaddr = (char*)shmat(shmid,NULL,0);
+
+		if(shmaddr == (void *)-1){
+			printf("root shmat failed\n");
+			exit(EXIT_FAILURE);
+		}
+		else
+			printf("root ssss %s\n",shmaddr); 
+		shmdt(shmaddr);
+
+	*/
+	shmctl(shmid, IPC_RMID, NULL);
 
 	return 0;
 }
