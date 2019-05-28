@@ -67,3 +67,5 @@ int semaphore_v(int sem_id)
 
 	return 1;
 }
+
+void *shm

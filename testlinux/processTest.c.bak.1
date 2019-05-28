@@ -9,17 +9,30 @@
 #include<limits.h>
 #include<sys/stat.h>
 #include<string.h>
-//#include<sys/sem.h>
-#include<sys/shm.h>
-#include<sys/ipc.h>
-
+#include<sys/sem.h> //信号量
+#include<sys/shm.h> //共享内存
+#include<sys/ipc.h> 
+#include<sys/msg.h> //消息队列
+//socket
+#include<sys/socket.h>
+#include<netinet/in.h> 
+#include<errno.h>
 
 #define KEY (key_t)1234
 #define SIZE 1024
 #define CHARBUFFER 128
+#define ID  25
+
+
 int msgbufSend(char * fifo_name, char * pid_Send, char * pid_Accept);
 int msgbufAccept(char * fifo_name, char * pid_Accept, char * pid_Send);
 
+
+struct  mymesg
+{
+	long int mtype;
+	char mtext[CHARBUFFER];
+};
 int main(void)
 {
 	const char *fifo_name1 = "myfifo1";
@@ -42,17 +55,13 @@ int main(void)
 	mkfifo(fifo_name6, mode);
 	//mkfifo(fifo_name7, mode);//采用了信号量做法，因此废弃
 
-	//父进程创建共享内存
+	//用于共享内存
 	int shmid;
 	char *shmaddr;
 	struct shmid_ds buf;
-
-	shmid = shmget(KEY, CHARBUFFER, IPC_CREAT | 0666);//创建
 	
-	if(shmid == -1){
-		fprintf(stderr, "root create shm failed\n");
-		exit(EXIT_FAILURE);
-	}
+	//套接字
+
 
 	pid_t pid1 = fork();
 	if(pid1 == 0){//第一次肯定都不是0，但第二次，一定是0
@@ -101,7 +110,32 @@ int main(void)
 		msgbufAccept(fifo_name3, "pid4", "pid3");
 
 		/*pid4发送消息给pid6*/
-		msgbufSend(fifo_name5, "pid4", "pid6");	
+		int id = 0;
+		struct  mymesg ckxmsg;
+		memset(&ckxmsg, 0 , sizeof(struct mymesg));
+
+		key_t key = ftok("/home/ics", ID);//生成键值
+		id = msgget(key,IPC_CREAT | 0666);
+		if(id == -1){
+			printf("create msg error\n");
+			return -1;
+		}
+		//向消息队列里写数据
+		char msg[CHARBUFFER] = {0};
+		ckxmsg.mtype = 1;
+		strcpy(msg, "pid4 send msg to pid6");
+
+		if(msgsnd(id, (void *)&ckxmsg, CHARBUFFER, 0) < 0)
+		{
+			printf("send msg error\n");
+			return -1;
+		}
+		sleep(2);
+		if(msgctl(id, IPC_RMID, NULL) < 0)
+		{
+			printf("del msg error \n");
+			return -1;
+		}
 
 		exit(1);
 	}
@@ -124,7 +158,27 @@ int main(void)
 		printf("I'm pid6;PID=%d\n", getpid());
 
 		/*pid6接收pid4*/
-		msgbufAccept(fifo_name5, "pid6", "pid4");
+		int id = 0;
+		struct mymesg ckxmsg;
+
+		memset(&ckxmsg, 0 , sizeof(struct mymesg));
+		key_t key  = ftok("/home/ics", 0666 | IPC_CREAT);
+		if(-1 == id)
+		{
+			printf("open msg error\n");
+			return -1;
+		}
+
+		//从消息队列里拿数据
+		if((msgrcv, (void *)&ckxmsg, CHARBUFFER, 1, 0) < 0){
+			printf("receive msg error\n");
+			return -1;
+		}else{
+			printf("pid6 gets pid4 msg：%s\n", ckxmsg.mtext);
+		}
+		
+		//*****************************************
+		//*****************************************
 
 		/*pid6接收pid5*/
 		msgbufAccept(fifo_name6, "pid6", "pid5");
@@ -136,8 +190,8 @@ int main(void)
 			fprintf(stderr, "root create shm failed\n");
 			exit(EXIT_FAILURE);
 		}
-		shmaddr = (char*)shmat(shmid, NULL, 0);
 
+		shmaddr = (char*)shmat(shmid, NULL, 0);//连接
 		if(shmaddr == (void *)-1)
 		{
 			printf("pid6 use shm failed\n");
@@ -145,9 +199,10 @@ int main(void)
 
 		strcpy(shmaddr, "pid6 send msg to msg7");
 
-		shmdt(shmaddr);
+		shmdt(shmaddr);//中断连接
 		sleep(8);
-			shmctl(shmid, IPC_RMID, NULL);
+
+		shmctl(shmid, IPC_RMID, NULL);//关闭共享内存
 
 		exit(1);
 	}
@@ -169,13 +224,15 @@ int main(void)
 
 		printf("pid7 get pid6 msg : %s\n", shmaddr);
 
-		shmdt(shmaddr);
+		shmdt(shmaddr);//中断连接
+
 		exit(1);
 	}	
-	sleep(9);
+
 	return 0;
 }
- 
+
+
 int msgbufSend(char * fifo_name, char * pid_Send, char * pid_Accept)
 {
 	int pipe_fd_w = -1;
@@ -202,4 +259,3 @@ int msgbufAccept(char * fifo_name, char * pid_Accept, char * pid_Send)
 
 	return 0;
 }
-
